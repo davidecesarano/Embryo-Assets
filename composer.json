@@ -1,7 +1,7 @@
 {
     "name": "davidecesarano/embryo-assets",
     "type": "library",
-    "description": "A PHP renderer for rendering PHP views in PSR response.",
+    "description": "Simple PHP library that combines, minify and serves css or javascript files in inline mode or in a bundle file.",
     "keywords": [
         "view",
         "renderer",
