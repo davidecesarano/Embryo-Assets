@@ -185,7 +185,7 @@
         public function bundle()
         {
             if ($this->type === 'css') {
-                echo '<link rel="stylesheet" src="'.$this->bundle.'" />';
+                echo '<link rel="stylesheet" href="'.$this->bundle.'" />';
             } else {
                 echo '<script src="'.$this->bundle.'"></script>';
             }
