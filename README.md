@@ -38,13 +38,11 @@ This will return:
 </style>
 ```
 
-Files are combined, compressed and cached in one file:
+Files are combined, compressed and cached in one file. When you modify one file or change array css file, it compiling the file again.
 ```
 /path/to/source/compilers/app.css.map -> Sources array
 /path/to/source/compilers/app.css -> Css code
 ```
-
-When you modify one file or change array css file, it compiling the file again.
 
 ### Use bundle
 If you want include bundle file instead of inline mode, use this:
