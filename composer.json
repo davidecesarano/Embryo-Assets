@@ -1,0 +1,26 @@
+{
+    "name": "davidecesarano/embryo-assets",
+    "type": "library",
+    "description": "A PHP renderer for rendering PHP views in PSR response.",
+    "keywords": [
+        "view",
+        "renderer",
+        "psr"
+    ],
+    "homepage": "https://github.com/davidecesarano/embryo-assets",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Davide Cesarano",
+            "homepage": "https://github.com/davidecesarano"
+        }
+    ],
+    "require": {
+        "php": ">=7.1"
+    },
+    "autoload": {
+        "psr-4": {
+            "Embryo\\": "Embryo/"
+        }
+    }
+}
