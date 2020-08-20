@@ -78,30 +78,6 @@
         }
 
         /**
-         * Set assets path.
-         * 
-         * @param string $assetsPath 
-         * @return self
-         */
-        public function setAssetsPath(string $assetsPath)
-        {
-            $this->assetsPath = rtrim($assetsPath, DIRECTORY_SEPARATOR);
-            return $this;
-        }
-
-        /**
-         * Set compilers path.
-         * 
-         * @param string $compilersPath 
-         * @return self
-         */
-        public function setCompilersPath(string $compilersPath)
-        {
-            $this->compilersPath = rtrim($compilersPath, DIRECTORY_SEPARATOR);
-            return $this;
-        }
-
-        /**
          * Set absolute path for replacing the relative
          * path in css file.
          * 
@@ -110,7 +86,7 @@
          */
         public function resolveRelativePath(string $absolutePath) 
         {
-            $this->absolutePath = rtrim($absolutePath, DIRECTORY_SEPARATOR).'/';
+            $this->absolutePath = rtrim($absolutePath, DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR;
             return $this;
         }
 
@@ -119,10 +95,11 @@
          * 
          * @return self
          */
-        public function build()
+        public function build(string $compilersPath)
         {
-            $app     = $this->compilersPath.'/'.$this->filename.'.'.$this->type;
-            $map     = $this->compilersPath.'/'.$this->filename.'.'.$this->type.'.map';
+            $compilersPath = rtrim($compilersPath, DIRECTORY_SEPARATOR);
+            $app     = $compilersPath.DIRECTORY_SEPARATOR.$this->filename.'.'.$this->type;
+            $map     = $compilersPath.DIRECTORY_SEPARATOR.$this->filename.'.'.$this->type.'.map';
             $build   = false;
             $code    = '';
             $sources = [];
@@ -140,7 +117,7 @@
 
             if (file_exists($app)) {
                 foreach ($this->files as $file) {
-                    $f = $this->assetsPath.'/'.trim($file, '/');
+                    $f = $file;
                     if (file_exists($f)) {
                         if (filemtime($f) > filemtime($app)) {
                             $build = true;
@@ -152,7 +129,7 @@
             if ($build) {
                 
                 foreach ($this->files as $file) {
-                    $f = $this->assetsPath.'/'.trim($file, '/');
+                    $f = $file;
                     if (file_exists($f)) {
                         switch($this->type) {
                             case 'css': 
