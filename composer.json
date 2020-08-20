@@ -3,9 +3,9 @@
     "type": "library",
     "description": "Simple PHP library that combines, minify and serves css or javascript files in inline mode or in a bundle file.",
     "keywords": [
-        "view",
-        "renderer",
-        "psr"
+        "minifier",
+        "assets",
+        "php"
     ],
     "homepage": "https://github.com/davidecesarano/embryo-assets",
     "license": "MIT",
