@@ -9,58 +9,60 @@
 
     namespace Embryo\Assets;
 
+    use Psr\Http\Message\ServerRequestInterface;
+    
     class Assets 
     {
         /**
          * @var array $files
          */
-        public $files = [];
+        private $files = [];
         
         /**
          * @var string $type
          */
-        public $type;
+        private $type;
 
         /**
          * @var string $filename
          */
-        public $filename = 'app';
+        private $filename = 'app';
 
         /**
-         * @var string $assetsPath
+         * @var bool $forceBuild
          */
-        public $assetsPath = '';
+        private $forceBuild = false;
 
         /**
-         * @var string $compilersPath
+         * @var ServerRequestInterface $request
          */
-        public $compilersPath = '';
-
-        /**
-         * @var string $absolutePath
-         */
-        public $absolutePath = '';
-
-        /**
-         * @var string $bundle
-         */
-        public $bundle;
+        private $request;
 
         /**
          * Set array files and type assets (css or js).
          * 
          * @param array $files 
          * @param string $type 
-         * @return self
-         * @throws InvalidArgumentException
+         * @throws \InvalidArgumentException
          */
         public function __construct(array $files, string $type)
         {
             if (!in_array($type, ['css', 'js'])) {
-                throw new \InvalidArgumentException('Files must be a css or js');
+                throw new \InvalidArgumentException('Files must be CSS or JavaScript.');
             }
             $this->files = $files;
             $this->type  = $type;
+        }
+
+        /**
+         * Set PSR Server Request.
+         * 
+         * @param ServerRequestInterface $request 
+         * @return self
+         */
+        public function setRequest(ServerRequestInterface $request): self
+        {
+            $this->request = $request;
             return $this;
         }
 
@@ -71,45 +73,45 @@
          * @param string $filename 
          * @return self
          */
-        public function setFilename(string $filename = 'app')
+        public function setFilename(string $filename = 'app'): self
         {
             $this->filename = $filename;
             return $this;
         }
 
         /**
-         * Set absolute path for replacing the relative
-         * path in css file.
+         * Force build.
          * 
-         * @param $absolutePath 
+         * @param bool $forceBuild
          * @return self
          */
-        public function resolveRelativePath(string $absolutePath) 
+        public function forceBuild(bool $forceBuild): self
         {
-            $this->absolutePath = rtrim($absolutePath, DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR;
+            $this->forceBuild = $forceBuild;
             return $this;
         }
 
         /**
          * Combine and minify files.
          * 
-         * @return self
+         * @return string
          */
-        public function build(string $compilersPath)
+        public function build(string $compilersPath): string
         {
             $compilersPath = rtrim($compilersPath, DIRECTORY_SEPARATOR);
-            $app     = $compilersPath.DIRECTORY_SEPARATOR.$this->filename.'.'.$this->type;
-            $map     = $compilersPath.DIRECTORY_SEPARATOR.$this->filename.'.'.$this->type.'.map';
-            $build   = false;
-            $code    = '';
-            $sources = [];
+            $app           = $compilersPath.DIRECTORY_SEPARATOR.$this->filename.'.'.$this->type;
+            $map           = $compilersPath.DIRECTORY_SEPARATOR.$this->filename.'.'.$this->type.'.map';
+            $build         = false;
+            $code          = '';
+            $document_root = $this->request->getServerParams()['DOCUMENT_ROOT'];
 
             if (!file_exists($map) || !file_exists($app)) {
                 $build = true;
             }
 
-            if (file_exists($map)) {
-                $sourcesMap = json_decode(file_get_contents($map));
+            if (file_exists($map) && file_get_contents($map)) {
+                $contentMap = file_get_contents($map);
+                $sourcesMap = $contentMap ? json_decode($contentMap) : [];
                 if ($sourcesMap != $this->files) {
                     $build = true;
                 }
@@ -126,15 +128,15 @@
                 }
             }
 
-            if ($build) {
+            if ($build || $this->forceBuild) {
                 
                 foreach ($this->files as $file) {
                     $f = $file;
                     if (file_exists($f)) {
                         switch($this->type) {
                             case 'css': 
-                                $css  = $this->minify($f, 'css'); 
-                                $code .= ($this->absolutePath != '') ? str_replace('../', $this->absolutePath, $css) : $css;
+                                $css = $this->minify($f, 'css'); 
+                                $code .= $this->resolveRelativePath($css, $f);
                             break;
                             case 'js': 
                                 $code .= $this->minify($f, 'js');
@@ -142,48 +144,15 @@
                         }
                     }
                 }
-                file_put_contents($map, json_encode($this->files));
+                $files = json_encode(str_replace($document_root, '', $this->files));
+                file_put_contents($map, $files);
                 file_put_contents($app, $code);
 
             } else {
-                $code = file_get_contents($app);
+                $appContent = file_get_contents($app);
+                $code = $appContent ? $appContent : '';
             }
-
-            $this->bundle = $app;
-            $this->code   = $code;
-            return $this;
-        }
-
-        /**
-         * Echo bundle file in html tag.
-         * 
-         * @return string
-         */
-        public function bundle()
-        {
-            if ($this->type === 'css') {
-                echo '<link rel="stylesheet" href="'.$this->bundle.'" />';
-            } else {
-                echo '<script src="'.$this->bundle.'"></script>';
-            }
-        }
-
-        /**
-         * Echo inline files content in html tag.
-         * 
-         * @return string
-         */
-        public function inline()
-        {
-            if ($this->type === 'css') {
-                echo '<style>'.PHP_EOL;
-                echo $this->code.PHP_EOL;
-                echo '</style>';
-            } else {
-                echo '<script>'.PHP_EOL;
-                echo $this->code.PHP_EOL;
-                echo '</script>';
-            }
+            return $code;
         }
 
         /**
@@ -192,7 +161,7 @@
          * @param array $files 
          * @return self
          */
-        public static function css(array $files)
+        public static function css(array $files): self
         {
             return new Assets($files, 'css');
         }
@@ -203,7 +172,7 @@
          * @param array $files 
          * @return self
          */
-        public static function js(array $files)
+        public static function js(array $files): self
         {
             return new Assets($files, 'js');
         }
@@ -214,38 +183,52 @@
          * @see https://cssminifier.com/php
          * @see https://javascript-minifier.com/php
          * @param string $file 
-         * @param string type 
+         * @param string $type 
          * @return string
          */
-        private function minify(string $file, string $type)
+        private function minify(string $file, string $type): string
         {
-            $host    = ['css' => 'cssminifier', 'js' => 'javascript-minifier'];
-            $url     = 'https://'.$host[$type].'.com/raw';
-            $content = file_get_contents($file);
-            $ch      = curl_init();
-
+            $host     = ['css' => 'cssminifier', 'js' => 'javascript-minifier'];
+            $url      = 'https://'.$host[$type].'.com/raw';
+            $content  = file_get_contents($file);
+            $input    = $content ? $content : '';
+            $ch       = curl_init();
+            
             curl_setopt_array($ch, [
                 CURLOPT_URL            => $url,
                 CURLOPT_RETURNTRANSFER => true,
                 CURLOPT_POST           => true,
                 CURLOPT_HTTPHEADER     => ["Content-Type: application/x-www-form-urlencoded"],
-                CURLOPT_POSTFIELDS     => http_build_query([ "input" => $content ])
+                CURLOPT_POSTFIELDS     => http_build_query([ "input" => $input ])
             ]);
 
             $minified = curl_exec($ch);
             curl_close($ch);
-            return $minified;
+            return strval($minified);
         }
 
         /**
-         * Replace relative path with absolute path.
+         * Replace relative path with 
+         * root public path.
          * 
          * @param string $css 
-         * @param string $path 
+         * @param string $source 
          * @return string
          */
-        private static function resolvePath(string $css, string $path)
+        private function resolveRelativePath(string $css, string $source): string
         {
-            return str_replace('../', $path, $css);
+            $dir    = dirname($source);
+            $re     = '/url\(\s*?(?P<path>.+?)\s*\)/ix';
+            $params = $this->request->getServerParams();
+            preg_match_all($re, $css, $matches, PREG_SET_ORDER);
+            if (!empty($matches)) {
+                foreach ($matches as $match) {
+                    $realpath   = realpath($dir.DIRECTORY_SEPARATOR.$match['path']);
+                    $publicpath = $realpath ? str_replace($params['DOCUMENT_ROOT'], '', $realpath) : $match['path'];
+                    $sub        = 'url('.$publicpath.')';
+                    $css        = str_replace($match[0], $sub, $css);
+                }
+            }
+            return $css;
         }
     }
