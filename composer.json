@@ -3,9 +3,9 @@
     "type": "library",
     "description": "Simple PHP library that combines, minify and serves css or javascript files in inline mode or in a bundle file.",
     "keywords": [
-        "minifier",
-        "assets",
-        "php"
+        "php minifier",
+        "php minify js",
+        "php minify css"
     ],
     "homepage": "https://github.com/davidecesarano/embryo-assets",
     "license": "MIT",
@@ -16,11 +16,15 @@
         }
     ],
     "require": {
-        "php": ">=7.1"
+        "php": ">=7.1",
+        "davidecesarano/embryo-http": "dev-master"
     },
     "autoload": {
         "psr-4": {
             "Embryo\\": "Embryo/"
         }
+    },
+    "require-dev": {
+        "phpstan/phpstan": "^0.12.40"
     }
 }
