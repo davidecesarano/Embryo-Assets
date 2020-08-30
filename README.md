@@ -4,10 +4,12 @@ Embryo Assets is a simple PHP library that combines, minify and serves css or ja
 ## Features
 * Files combined, compressed and cached until they are modified.
 * Uses an online service provided by Andy Chilton, [http://chilts.org/](http://chilts.org/).
-* Replace relative path with absolute path in css file.
+* Replace relative path with root public path in css file.
+* PSR-7 compatible.
 
 ## Requirements
 * PHP >= 7.1
+* A [PSR-7](https://www.php-fig.org/psr/psr-7/) http message implementation and [PSR-17](https://www.php-fig.org/psr/psr-17/) http factory implementation (ex. [Embryo-Http](https://github.com/davidecesarano/Embryo-Http))
 
 ## Installation
 Using Composer:
@@ -16,84 +18,60 @@ $ composer require davidecesarano/embryo-assets
 ```
 
 ## Usage
-
 ```php
 use Embryo\Assets\Assets;
+use Embryo\Http\Factory\ServerRequestFactory;
 
-Assets::css([
-    'css/file1.css',
-    'css/file2.css',
-    'css/file3.css'
+$request = (new ServerRequestFactory)->createServerRequestFromServer();
+$css = Assets::css([
+    '/path/to/css/file1.css',
+    '/path/to/css/file2.css',
+    '/path/to/css/file3.css'
 ])
-->setAssetsPath('/path/to/source/assets/')
-->setCompilersPath('/path/to/source/compilers/')
-->build()
-->inline();
+->setRequest($request)
+->build('/path/to/source/compilers/');
 ```
-
-This will return:
-```html
+This will produce:
+```
+/path/to/compilers/app.css.map -> Sources array
+/path/to/compilers/app.css -> Css code
+```
+Now, you may use it in your template file:
+```php
 <style>
-    // css code here
+    <?php echo $css; ?>
 </style>
 ```
-
 Files are combined, compressed and cached in one file. When you modify one file or change array css file, it compiling the file again.
+
+You may quickly test this using the built-in PHP server going to http://localhost:8000.
 ```
-/path/to/source/compilers/app.css.map -> Sources array
-/path/to/source/compilers/app.css -> Css code
+$ cd example
+$ php -S localhost:8000
 ```
 
 ### Use bundle
-If you want include bundle file instead of inline mode, use this:
-
+If you want include bundle file instead of inline mode, be sure the compile file in a public folder (for example, in `assets` folder). 
 ```php
-use Embryo\Assets\Assets;
-
 Assets::css([
-    'css/file1.css',
-    'css/file2.css',
-    'css/file3.css'
+    '/path/to/css/file1.css',
+    '/path/to/css/file2.css',
+    '/path/to/css/file3.css'
 ])
-->setAssetsPath('/path/to/source/assets/')
-->setCompilersPath('/path/to/source/compilers/')
-->build()
-->bundle();
+->setRequest($request)
+->build('/path/to/assets/');
 ```
-
-This will return:
-
+Now, you may include the file in `<link>` tag:
 ```html
-<link rel="stylesheet" href="/path/to/source/compilers/app.css" />
-```
-
-### Resolve the relative path in css file
-If you have CSS with relative paths use this:
-
-```php
-use Embryo\Assets\Assets;
-
-Assets::css([
-    'css/file1.css',
-    'css/file2.css',
-    'css/file3.css'
-])
-->setAssetsPath('/path/to/source/assets/')
-->setCompilersPath('/path/to/source/compilers/'),
-->resolveRelativePath('/path/to/absolute/')
-->build()
-->bundle();
+<link rel="stylesheet" href="/assets/app.css" />
 ```
 
 ### JS
-It's same the CSS example. You must replace css static method with js static method. The `inline()` and `bundle()` methods returns:
+It's same the CSS example. You must replace css static method with `js` static method.
 
-```
-// inline()
-<script>
-    // js code here
-</script>
+## Options
+### `forceBuild(bool $forceBuild): self`
+If `true` build file for every request. Default is `false`.
 
-// bundle()
-<script src="/path/to/source/compilers/app.js"></script>
-```
+### `setFilename(string $filename): self`
+Set the filename. Default is `app`.
