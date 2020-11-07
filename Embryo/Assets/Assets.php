@@ -110,9 +110,11 @@
             }
 
             if (file_exists($map) && file_get_contents($map)) {
-                $contentMap = file_get_contents($map);
-                $sourcesMap = $contentMap ? json_decode($contentMap) : [];
-                if ($sourcesMap != $this->files) {
+                $contentMap  = file_get_contents($map);
+                $sourcesMap  = $contentMap ? json_decode($contentMap) : [];
+                $decodeFiles = json_encode(str_replace($document_root, '', $this->files));
+                $filesArray  = $decodeFiles ? json_decode($decodeFiles) : [];
+                if ($sourcesMap != $filesArray) {
                     $build = true;
                 }
             }
